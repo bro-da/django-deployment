@@ -245,3 +245,8 @@ git pull # after pushing from somewhere else and from the the projectdir locatio
 sudo systemctl restart gunicorn
 sudo nginx -t && sudo systemctl restart nginx
 ```
+
+
+## references 
+[where i copied most of this tutorial check this page for more additional information](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04)
+[initial server setup also from digital ocean](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-22-04)
