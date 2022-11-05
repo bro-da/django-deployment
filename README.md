@@ -1,28 +1,44 @@
 # django-deployment
 a simple step by step process for hosting django on any server with out hassle 
 
+- [django-deployment](#django-deployment)
+  - [introduction](#introduction)
+  - [setup a server with custom user](#setup-a-server-with-custom-user)
+  - [install neccesary packages](#install-neccesary-packages)
+  - [setup postgres database](#setup-postgres-database)
+  - [installing and running the django app](#installing-and-running-the-django-app)
+  - [gunicorn setup](#gunicorn-setup)
+  - [Configure Nginx to Proxy Pass to Gunicorn](#configure-nginx-to-proxy-pass-to-gunicorn)
+    - [troubleshooting](#troubleshooting)
+  - [Further Troubleshooting](#further-troubleshooting)
+  - [references](#references)
+    
+
+
 ## introduction
 I made this repo because some of my friends had difficulties deploying django web apps on aws because They had little to no experiance working on cli based system .Most get through (even me) by refering multiple pages and using various hacks but after at the end the deployment They get so overwhemed They forget the entire process so i am creating this repo so that those with difficulty can get the all the commands for deployment right here and as a source for further reference 
 
-## steps
 
 ## setup a server with custom user
-* create a server (ec2 instance works best and is pretty painless to create) 
+1. create a server (ec2 instance works best and is pretty painless to create) 
     * make sure to open the http and https and ssh ports when creating the instance otherwise you have to go tinker on the security to get them to open
     * login to the ec2 instance through the .pem file you received during the instance creation process
-* after login when we look to the prompt we could see we are logged in as ubuntu its always better to create a new user and unlock the ssh login through password     so we could login anywhere and login even if we lose our pem keys
-* steps to create a user in ubuntu
-```shell
-sudo adduser USER
-```
-give the user any name you want
+2. after login when we look to the prompt we could see we are logged in as ubuntu its always better to create a new user and unlock the ssh login through password     so we could login anywhere and login even if we lose our pem keys
+3. steps to create a user in ubuntu
+   
+    ```shell
+    sudo adduser USER
+    ```
+ give the user any name you want
 
-```shell
-sudo usermod -aG sudo USER
-```
+
+        ```shell
+        sudo usermod -aG sudo USER
+        ```
+
 this command helps to give the user USER sudo privilege 
 
-* setup  ufw: This step is important not beacause its important (aws already has a firewall built-in ) but because i see many (even me ) people activate the wfw without allowing ssh and http port through i guess if we activate ufw without fully completing getting ssh connection to the instance requires extra tinkering 
+1. setup  ufw: This step is important not beacause its important (aws already has a firewall built-in ) but because i see many (even me ) people activate the wfw without allowing ssh and http port through i guess if we activate ufw without fully completing getting ssh connection to the instance requires extra tinkering 
  refer this if it happened to you [ssh not connecting](https://stackoverflow.com/questions/41929267/locked-myself-out-of-ssh-with-ufw-in-ec2-aws).
 
  ```shell
@@ -31,25 +47,26 @@ this command helps to give the user USER sudo privilege
  ufw status # continue only if you see openssh on the list
  ```
 
-* steps to enable ssh password authentication on
+2 .steps to enable ssh password authentication on
     ```shell
     sudo nano /etc/ssh/sshd_config # find "PasswordAuthentication" enabling it  yes
     sudo service sshd restart
     ```
-    only logout after doing this step and rechecking ufw allow list
-
-* logout and reconnect through ssh using new user and password
-    ```shell
+    only logout after doing this step and rechecking ufw allow list.
+    logout and reconnect through ssh using new user and password
+    
+    ```
     ssh USER@IP-ADDRESS
     ```
 
+## install neccesary packages
 
-* update the ubuntu instance and install necessary software
+1. update the ubuntu instance and install necessary software
 ```shell
 sudo apt update
 sudo apt install python3-venv python3-dev libpq-dev postgresql postgresql-contrib nginx curl # postgresql package and the next steps optional if youre running the postgres data on the same instance
 ```
-* step to install postgresql on the instance
+2. step to install postgresql on the instance
 ```shell 
 
 sudo systemctl start postgresql
@@ -57,7 +74,8 @@ sudo systemctl enable postgresql
 sudo -u postgres psql 
 
 ```
-necessary configureation for postgres
+## setup postgres database
+1. necessary configureation for postgres
 
 ```shell
 CREATE DATABASE myproject;
@@ -72,14 +90,14 @@ pick and choose the commands and the values for user and myprojectuser
 
 ## installing and running the django app
 
-* get the django web app source code into the instance using scp or remote repositary (git)
+1. get the django web app source code into the instance using scp or remote repositary (git)
 
 ```shell
-git clone github-url.com
+git clone http://your.github-url.com
 ```
 
-* youre django app has some dependencies to work properly (make sure to create a "requirements.txt" from inside youre env on local computer)
-* create new python environment and activate it
+youre django app has some dependencies to work properly (make sure to create a "requirements.txt" from inside youre env on local computer)
+2. create new python environment and activate it
 ```shell
 sudo apt install python3-venv
 python3 -m venv venv
@@ -87,7 +105,7 @@ source venv/bin/activate
 pip install -r requirements.txt # that is if youre requirements.txt is youre list of dependencies
 ```
 
-* change the database configuration in youre youre-project/settings.py
+3. change the database configuration in youre youre-project/settings.py
 
 ```python3
 DATABASES = {
@@ -102,16 +120,16 @@ DATABASES = {
 }
 ```
 
-* check youre django app is working or or has any error
+4. check youre django app is working or or has any error
 
 ```python3
 python3 manage.py runserver
 ```
-* if everything is jolly lets move on to setting nginx and gunicorn setup 
+if everything is jolly lets move on to setting nginx and gunicorn setup 
 
 
 ## gunicorn setup
-* Creating systemd Socket and Service Files for Gunicorn
+1. Creating systemd Socket and Service Files for Gunicorn
 
     The Gunicorn socket will be created at boot and will listen for connections. When a connection occurs, systemd will automatically start the Gunicorn process to handle the connection.
 
@@ -119,7 +137,7 @@ python3 manage.py runserver
     ```shell
     sudo nano /etc/systemd/system/gunicorn.socket
     ```
-    * copy this into it 
+2. copy this into it 
 
     ```
     [Unit]
@@ -135,11 +153,11 @@ python3 manage.py runserver
 
 press ctrl-x and y and enter to save and close
 
-* create and open a systemd service file for Gunicorn with sudo privileges in your text editor. The service filename should match the socket filename with the exception of the extension
+3. create and open a systemd service file for Gunicorn with sudo privileges in your text editor. The service filename should match the socket filename with the exception of the extension
 ```shell
 sudo nano /etc/systemd/system/gunicorn.service
 ```
-* copy this into it and i have capitalised the parts which you need to change to suit youre needs
+4. copy this into it and i have capitalised the parts which you need to change to suit youre needs
 ```
 [Unit]
 Description=gunicorn daemon
@@ -160,14 +178,14 @@ ExecStart=/home/USER/MYPROJECTDIR/venv/bin/gunicorn \
 WantedBy=multi-user.target
 
 ```
-* press ctrl-x and y and enter to save and close
+press ctrl-x and y and enter to save and close
 
-run this command to add gunicorn to systemd and run it 
+5. run this command to add gunicorn to systemd and run it 
 ```shell
 sudo systemctl start gunicorn.socket
 sudo systemctl enable gunicorn.socket
 ```
-run this command to troubleshoot 
+6. run this command to troubleshoot 
 ```shell
 sudo systemctl status gunicorn.socket
 curl --unix-socket /run/gunicorn.sock localhost # run this to check if youre server is serving
@@ -177,10 +195,12 @@ curl --unix-socket /run/gunicorn.sock localhost # run this to check if youre ser
 
 Now that Gunicorn is set up, you need to configure Nginx to pass traffic to the process.
 
+1. edit nginx configuration file
+   
 ```shell
 sudo nano /etc/nginx/sites-available/MYPROJECT
 ```
-as always i will capitlaise the keywords you need to change
+2. As always i will capitlaise the keywords you need to change copy this into it
 ```
 server {
     listen 80;
@@ -198,10 +218,12 @@ server {
 }
 ```
 
-
+3. link the sites available and sites enabled with soft link
 ```shell
-sudo ln -s /etc/nginx/sites-available/MYPROJECT/etc/nginx/sites-enabled
+sudo ln -s /etc/nginx/sites-available/MYPROJECT /etc/nginx/sites-enabled
 ```
+
+4. start nginx and allow through ufw applist
 
 ```shell 
 sudo nginx -t  #to check if there is any problem in nginx configuration 
@@ -210,16 +232,6 @@ sudo ufw delete allow 8000
 sudo ufw allow 'Nginx Full'
 ```
 
-
-
-
-
-
-* nginx is most likely installed in earlier sudo apt install if not 
-
-```shell
-sudo apt install nginx
-```
 
 ### troubleshooting
 * Nginx Is Showing the Default Page Instead of the Django Application
@@ -231,7 +243,7 @@ what i do personally is mv the default nginx configuration to another place
 sudo mv /etc/nginx/sites-available/default ~/default
 ```
 
-* Further Troubleshooting
+## Further Troubleshooting
 
 For additional troubleshooting, the logs can help narrow down root causes. Check each of them in turn and look for messages indicating problem areas.
 
@@ -253,5 +265,5 @@ sudo nginx -t && sudo systemctl restart nginx
 
 
 ## references 
-[where i copied most of this tutorial check this page for more additional information](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04)
-[initial server setup also from digital ocean](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-22-04)
+1. [where i copied most of this tutorial check this page for more additional information](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04)
+2. [initial server setup also from digital ocean](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-22-04)
