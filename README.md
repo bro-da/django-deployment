@@ -6,6 +6,7 @@ I made this repo because some of my friends had difficulties deploying django we
 
 ## steps
 
+## setup a server with custom user
 * create a server (ec2 instance works best and is pretty painless to create) 
     * make sure to open the http and https and ssh ports when creating the instance otherwise you have to go tinker on the security to get them to open
     * login to the ec2 instance through the .pem file you received during the instance creation process
@@ -42,6 +43,7 @@ this command helps to give the user USER sudo privilege
     ssh USER@IP-ADDRESS
     ```
 
+
 * update the ubuntu instance and install necessary software
 ```shell
 sudo apt update
@@ -67,6 +69,8 @@ GRANT ALL PRIVILEGES ON DATABASE myproject TO myprojectuser;
 \q
 ```
 pick and choose the commands and the values for user and myprojectuser
+
+## installing and running the django app
 
 * get the django web app source code into the instance using scp or remote repositary (git)
 
@@ -106,6 +110,7 @@ python3 manage.py runserver
 * if everything is jolly lets move on to setting nginx and gunicorn setup 
 
 
+## gunicorn setup
 * Creating systemd Socket and Service Files for Gunicorn
 
     The Gunicorn socket will be created at boot and will listen for connections. When a connection occurs, systemd will automatically start the Gunicorn process to handle the connection.
@@ -168,7 +173,7 @@ sudo systemctl status gunicorn.socket
 curl --unix-socket /run/gunicorn.sock localhost # run this to check if youre server is serving
 ```
 
-### Configure Nginx to Proxy Pass to Gunicorn
+## Configure Nginx to Proxy Pass to Gunicorn
 
 Now that Gunicorn is set up, you need to configure Nginx to pass traffic to the process.
 
